@@ -26,27 +26,19 @@ impl<R: Read> Iterator for BlockIterator<R> {
 }
 
 pub struct DataFile {
-    large: bool,
+    file_path: String,
 }
 
 impl DataFile {
-    const REGULAR_FILE_NAME: &str = "data.txt";
-    const LARGE_FILE_NAME: &str = "large.txt";
-    const DATA_DIR_PATH: &str = "data";
-
-    pub fn new(large: bool) -> Self {
-        Self { large }
+    pub fn new(file_path: String) -> Self {
+        Self { file_path }
     }
 
     pub fn chunk_iter(
         &self,
         block_size: u32,
     ) -> Result<BlockIterator<BufReader<File>>, std::io::Error> {
-        let file = File::open(if self.large {
-            format!("{}/{}", Self::DATA_DIR_PATH, Self::LARGE_FILE_NAME)
-        } else {
-            format!("{}/{}", Self::DATA_DIR_PATH, Self::REGULAR_FILE_NAME)
-        })?;
+        let file = File::open(&self.file_path)?;
         Ok(BlockIterator::new(BufReader::new(file), block_size))
     }
 }

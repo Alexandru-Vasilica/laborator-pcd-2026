@@ -12,7 +12,6 @@ pub async fn start_udp_server() -> Result<(), std::io::Error> {
     loop {
         let mut buff = [0; MAX_BLOCK_SIZE];
         let (bytes_received, _) = socket.recv_from(&mut buff).await?;
-        println!("Received {} bytes", bytes_received);
         if bytes_received == 0 {
             println!("Stats: {:?}", stats);
             stats = Stats::default();

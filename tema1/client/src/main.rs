@@ -16,15 +16,18 @@ struct Args {
     block_size: u32,
 
     #[arg(short, long)]
-    large: bool,
+    file_path: String,
 }
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
     let args = Args::parse();
     println!("{:?}", args);
 
-    let file = DataFile::new(args.large);
+    let file = DataFile::new(args.file_path);
 
     let start_time = Instant::now();
     let stats = match args.transport {
@@ -34,7 +37,16 @@ async fn main() -> io::Result<()> {
             crate::transport::udp_stop_and_wait::handle_udp_stop_and_wait(file, args.block_size)
                 .await
         }
-        _ => todo!(),
+        Transport::Quic => {
+            crate::transport::quic::handle_quic(file, args.block_size)
+                .await
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
+        }
+        Transport::QuicStopAndWait => {
+            crate::transport::quic_stop_and_wait::handle_quic_stop_and_wait(file, args.block_size)
+                .await
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
+        }
     }?;
     let end_time = Instant::now();
     let duration = end_time.duration_since(start_time);

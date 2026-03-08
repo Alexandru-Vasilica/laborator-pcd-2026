@@ -1,6 +1,8 @@
 use std::{collections::HashMap, str::FromStr, sync::LazyLock};
 use thiserror::Error;
 
+pub mod quic;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Transport {
     Tcp,
