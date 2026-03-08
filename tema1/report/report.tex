@@ -22,7 +22,11 @@ This experiment evaluates the performance and reliability of five different tran
 The metrics were collected by transferring two different payload sizes (500 MB and 1 GB) using varying block sizes (512 B, 1KB, 16KB, ~60KB) over a local loopback connection. Quic does not support datagram sizes larger than 1.5KB, so the experiments were run with 512 B and 1KB.
 
 \section{How to Run}
+The project requires Rust and Cargo to be installed. The server and client can be run using the following commands:
 \subsection{Running the Server}
+
+The server listens to traffic for all the protocols concurrently on separate ports. To start the server, run the following command:
+
 \begin{verbatim}
 cargo run -p server
 \end{verbatim}
@@ -30,6 +34,18 @@ cargo run -p server
 \subsection{Running the Client}
 \begin{verbatim}
 cargo run -p client -- --transport <TYPE> --file-path <PATH> --block-size <BYTES>
+\end{verbatim}
+
+\subsubsection{Client Options}
+\begin{itemize}
+    \item \textbf{--transport TYPE}: The transport protocol to use. Can be \textbf{tcp}, \textbf{udp}, \textbf{udp-stop-and-wait}, \textbf{quic}, or \textbf{quic-stop-and-wait}.
+    \item \textbf{--file-path PATH}: The path to the file to transfer.
+    \item \textbf{--block-size BYTES}: The size of the block to transfer.
+\end{itemize}
+
+Note: When using UDP with larger block sizes, the UDP maximum datagram size of the system may need to be increased.
+\begin{verbatim}
+sudo sysctl -w net.inet.udp.maxdgram=65535
 \end{verbatim}
 
 \section{Experiment Results}
@@ -127,22 +143,24 @@ cargo run -p client -- --transport <TYPE> --file-path <PATH> --block-size <BYTES
 \section{Conclusions}
 The experiments demonstrate that there is no "one-size-fits-all" protocol; the choice depends heavily on the specific requirements for reliability, latency, and security.
 
-\subsection{TCP}
-TCP's highly optimized implementation in modern operating systems allows it to achieve high reliable throughput, especially with large block sizes.
+\subsection{TCP (Transmission Control Protocol)}
 \begin{itemize}
-    \item \textbf{Best Use Case}: Large-scale file transfers and traditional web services (HTTP/1.1 and HTTP/2) where 100\% data integrity is the highest priority.
+    \item \textbf{Advantages}: Guaranteed 100\% reliability and ordering. Highly optimized OS-level implementation. No data loss regardless of block size.
+    \item \textbf{Disadvantages}: Vulnerable to "Head-of-Line Blocking". Higher overhead due to heavy handshake and congestion control.
+
 \end{itemize}
 
-\subsection{UDP }
-Raw UDP is unparalleled in terms of pure speed and low latency because it bypasses the overhead of handshakes and congestion control. However, it is inherently "unsafe" as it offers no guarantees on delivery or ordering and is best used with smaller block sizes.
+\subsection{UDP (User Datagram Protocol)}
 \begin{itemize}
-    \item \textbf{Best Use Case}: Real-time communication  where the occasional lost packet is preferable to the delay caused by retransmissions.
+    \item \textbf{Advantages}: Minimal overhead and lowest possible latency. Maximum theoretical throughput for large block sizes.
+    \item \textbf{Disadvantages}: No reliability or ordering guarantees. High packet loss for large blocks due to IP fragmentation sensitivity.
 \end{itemize}
 
-\subsection{QUIC}
-QUIC effectively combines the speed of UDP with the security of TLS 1.3 and the reliability features of TCP (when used in stream mode). In the datagram mode tested here, it demonstrated high efficiency for small packets.
+\subsection{QUIC (Quick UDP Internet Connections)}
 \begin{itemize}
-    \item \textbf{Best Use Case}: Modern web traffic (HTTP/3),high-security environments requiring encrypted, multi-streamed communication.
+    \item \textbf{Advantages}: Built-in TLS 1.3 security. Better handling of high-packet-rate streams (small blocks). Supports connection migration.
+    \item \textbf{Disadvantages}: Measurable CPU overhead from mandatory encryption. Datagram mode is strictly MTU-limited and lacks native fragmentation.
+
 \end{itemize}
 
 
