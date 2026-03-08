@@ -13,7 +13,7 @@ pub async fn start_quic_server() -> Result<(), Box<dyn Error>> {
     while let Some(conn) = endpoint.accept().await {
         tokio::spawn(async move {
             match handle_connection(conn).await {
-                Ok(stats) => println!("Stats: {:?}", stats),
+                Ok(stats) => println!("Protocol : {:?}, Stats: {:?}", Transport::Quic, stats),
                 Err(e) => eprintln!("Error handling connection: {}", e),
             }
         });

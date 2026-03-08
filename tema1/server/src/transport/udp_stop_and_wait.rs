@@ -13,7 +13,11 @@ pub async fn handle_udp_stop_and_wait() -> Result<(), std::io::Error> {
         let mut buff = [0; MAX_BLOCK_SIZE];
         let (bytes_received, addr) = socket.recv_from(&mut buff).await?;
         if bytes_received == 0 {
-            println!("Stats: {:?}", stats);
+            println!(
+                "Protocol : {:?}, Stats: {:?}",
+                Transport::UdpStopAndWait,
+                stats
+            );
             stats = Stats::default();
             continue;
         }

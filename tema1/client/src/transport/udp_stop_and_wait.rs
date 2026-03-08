@@ -63,7 +63,6 @@ pub async fn handle_udp_stop_and_wait(
     };
     let chunk_iter = file.chunk_iter(block_size)?;
     for chunk in chunk_iter {
-        let chunk = chunk?;
         let payload = UdpPayload { seq, data: chunk };
         let _ack = send_and_wait_for_ack(&socket, &mut stats, address, &payload).await?;
         seq += 1;

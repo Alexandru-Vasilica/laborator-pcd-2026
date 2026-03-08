@@ -7,7 +7,6 @@ def generate_data(filename, size_in_mb):
     print(f"Generating {size_in_mb} MB of fake data to {path}...")
     
     with open(path, "wb") as f:
-        # Generate data in 1MB chunks to be memory efficient
         for _ in range(size_in_mb):
             f.write(os.urandom(1024 * 1024))
             

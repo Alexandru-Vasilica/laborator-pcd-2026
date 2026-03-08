@@ -1,44 +1,53 @@
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::Read;
 
-pub struct BlockIterator<R: Read> {
-    reader: R,
-    block_size: u32,
+pub struct BlockIterator<'a> {
+    data: &'a [u8],
+    block_size: usize,
+    current_pos: usize,
 }
 
-impl<R: Read> BlockIterator<R> {
-    pub fn new(reader: R, block_size: u32) -> Self {
-        Self { reader, block_size }
-    }
-}
-
-impl<R: Read> Iterator for BlockIterator<R> {
-    type Item = Result<Vec<u8>, std::io::Error>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut buffer = vec![0; self.block_size as usize];
-        match self.reader.read(&mut buffer) {
-            Ok(0) => None,
-            Ok(n) => Some(Ok(buffer[..n].to_vec())),
-            Err(e) => Some(Err(e)),
+impl<'a> BlockIterator<'a> {
+    pub fn new(data: &'a [u8], block_size: u32) -> Self {
+        Self {
+            data,
+            block_size: block_size as usize,
+            current_pos: 0,
         }
     }
 }
 
+impl<'a> Iterator for BlockIterator<'a> {
+    type Item = Vec<u8>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_pos >= self.data.len() {
+            return None;
+        }
+
+        let end = (self.current_pos + self.block_size).min(self.data.len());
+        let chunk = self.data[self.current_pos..end].to_vec();
+        self.current_pos = end;
+
+        Some(chunk)
+    }
+}
+
 pub struct DataFile {
-    file_path: String,
+    buffer: Vec<u8>,
 }
 
 impl DataFile {
     pub fn new(file_path: String) -> Self {
-        Self { file_path }
+        let mut file = File::open(&file_path).expect("Failed to open data file");
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)
+            .expect("Failed to read file into memory");
+
+        Self { buffer }
     }
 
-    pub fn chunk_iter(
-        &self,
-        block_size: u32,
-    ) -> Result<BlockIterator<BufReader<File>>, std::io::Error> {
-        let file = File::open(&self.file_path)?;
-        Ok(BlockIterator::new(BufReader::new(file), block_size))
+    pub fn chunk_iter(&self, block_size: u32) -> Result<BlockIterator<'_>, std::io::Error> {
+        Ok(BlockIterator::new(&self.buffer, block_size))
     }
 }

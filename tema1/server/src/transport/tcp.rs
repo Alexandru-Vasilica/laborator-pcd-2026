@@ -36,7 +36,7 @@ pub async fn start_tcp_server() -> Result<(), std::io::Error> {
             tokio::spawn(async move {
                 let stats = handle_connection(socket).await;
                 match stats {
-                    Ok(stats) => println!("Stats: {:?}", stats),
+                    Ok(stats) => println!("Protocol : {:?}, Stats: {:?}", Transport::Tcp, stats),
                     Err(e) => eprintln!("Error handling connection: {}", e),
                 }
             });

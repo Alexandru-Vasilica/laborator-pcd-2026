@@ -1,0 +1,150 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+
+\title{PCD Homework 1 Report}
+\author{Vasilică Alexandru, MISS1}
+\begin{document}
+\maketitle
+
+\section{Experiment Description}
+This experiment evaluates the performance and reliability of five different transport protocol implementations:
+\begin{itemize}
+    \item \textbf{TCP}: Standard stream-oriented reliable transport.
+    \item \textbf{UDP}: Raw unreliable datagram transport.
+    \item \textbf{UDP (Stop and Wait)}: A custom reliability layer implemented over UDP requiring an ACK for every packet.
+    \item \textbf{QUIC}: Used in Datagram mode to allow for high-throughput and to allow for testing the protocol's data loss without the built in reliability of stream mode.
+    \item \textbf{QUIC (Stop and Wait)}: A custom reliability layer implemented over QUIC datagrams.
+\end{itemize}
+
+The metrics were collected by transferring two different payload sizes (500 MB and 1 GB) using varying block sizes (512 B, 1KB, 16KB, ~60KB) over a local loopback connection. Quic does not support datagram sizes larger than 1.5KB, so the experiments were run with 512 B and 1KB.
+
+\section{How to Run}
+\subsection{Running the Server}
+\begin{verbatim}
+cargo run -p server
+\end{verbatim}
+
+\subsection{Running the Client}
+\begin{verbatim}
+cargo run -p client -- --transport <TYPE> --file-path <PATH> --block-size <BYTES>
+\end{verbatim}
+
+\section{Experiment Results}
+
+\subsection{ TCP}
+\begin{small}
+    \begin{longtable}{l r r r r r r r}
+        \toprule
+        \textbf{Payload} & \textbf{Block} & \textbf{Time(s)} & \textbf{Pkts(S)} & \textbf{Pkts(R)} & \textbf{Bytes(S)} & \textbf{Bytes(R)} & \textbf{Loss\%} \\
+        \midrule
+        1 GB             & 512            & 19.6306          & 2097152          & 2097152          & 1073741824        & 1073741824        & 0.00\%          \\
+        1 GB             & 1024           & 9.6824           & 1048576          & 1048576          & 1073741824        & 1073741824        & 0.00\%          \\
+        1 GB             & 16384          & 1.2510           & 65536            & 65536            & 1073741824        & 1073741824        & 0.00\%          \\
+        1 GB             & 60000          & 0.5400           & 17896            & 17896            & 1073741824        & 1073741824        & 0.00\%          \\
+        500 MB           & 512            & 10.4824          & 1024000          & 1024000          & 524288000         & 524288000         & 0.00\%          \\
+        500 MB           & 1024           & 5.0572           & 512000           & 512000           & 524288000         & 524288000         & 0.00\%          \\
+        500 MB           & 16384          & 0.6705           & 32000            & 32000            & 524288000         & 524288000         & 0.00\%          \\
+        500 MB           & 60000          & 0.2905           & 8739             & 8739             & 524288000         & 524288000         & 0.00\%          \\
+        \bottomrule
+    \end{longtable}
+\end{small}
+\subsection{ UDP}
+\begin{small}
+    \begin{longtable}{l r r r r r r r}
+        \toprule
+        \textbf{Payload} & \textbf{Block} & \textbf{Time(s)} & \textbf{Pkts(S)} & \textbf{Pkts(R)} & \textbf{Bytes(S)} & \textbf{Bytes(R)} & \textbf{Loss\%} \\
+        \midrule
+        1 GB             & 512            & 20.0796          & 2097152          & 2094517          & 1073741824        & 1072392704        & 0.13\%          \\
+        1 GB             & 1024           & 10.1761          & 1048576          & 1046042          & 1073741824        & 1071147008        & 0.24\%          \\
+        1 GB             & 16384          & 0.7629           & 65536            & 62467            & 1073741824        & 1023459328        & 4.68\%          \\
+        1 GB             & 60000          & 0.3009           & 17896            & 15836            & 1073741824        & 950141824         & 11.51\%         \\
+        500 MB           & 512            & 9.8073           & 1024000          & 1021243          & 524288000         & 522876416         & 0.27\%          \\
+        500 MB           & 1024           & 4.9123           & 512000           & 509365           & 524288000         & 521589760         & 0.51\%          \\
+        500 MB           & 16384          & 0.3790           & 32000            & 28771            & 524288000         & 471384064         & 10.09\%         \\
+        500 MB           & 60000          & 0.1666           & 8739             & 7062             & 524288000         & 423668000         & 19.19\%         \\
+        \bottomrule
+    \end{longtable}
+\end{small}
+\subsection{ UDP (Stop and Wait)}
+\begin{small}
+    \begin{longtable}{l r r r r r r r}
+        \toprule
+        \textbf{Payload} & \textbf{Block} & \textbf{Time(s)} & \textbf{Pkts(S)} & \textbf{Pkts(R)} & \textbf{Bytes(S)} & \textbf{Bytes(R)} & \textbf{Loss\%} \\
+        \midrule
+        1 GB             & 512            & 110.0781         & 2097152          & 2097152          & 1073741824        & 1073741824        & 0.00\%          \\
+        1 GB             & 1024           & 55.2263          & 1048576          & 1048576          & 1073741824        & 1073741824        & 0.00\%          \\
+        1 GB             & 16384          & 3.6949           & 65536            & 65536            & 1073741824        & 1073741824        & 0.00\%          \\
+        1 GB             & 60000          & 1.0859           & 17896            & 17896            & 1073741824        & 1073741824        & 0.00\%          \\
+        500 MB           & 512            & 53.7394          & 1024000          & 1024000          & 524288000         & 524288000         & 0.00\%          \\
+        500 MB           & 1024           & 26.9609          & 512000           & 512000           & 524288000         & 524288000         & 0.00\%          \\
+        500 MB           & 16384          & 1.7910           & 32000            & 32000            & 524288000         & 524288000         & 0.00\%          \\
+        500 MB           & 60000          & 0.5494           & 8739             & 8739             & 524288000         & 524288000         & 0.00\%          \\
+        \bottomrule
+    \end{longtable}
+\end{small}
+
+\subsection{ QUIC}
+\begin{small}
+    \begin{longtable}{l r r r r r r r}
+        \toprule
+        \textbf{Payload} & \textbf{Block} & \textbf{Time(s)} & \textbf{Pkts(S)} & \textbf{Pkts(R)} & \textbf{Bytes(S)} & \textbf{Bytes(R)} & \textbf{Loss\%} \\
+        \midrule
+        1 GB             & 512            & 14.6380          & 2097152          & 2041553          & 1073741824        & 1045275136        & 2.65\%          \\
+        1 GB             & 1024           & 13.4797          & 1048576          & 989332           & 1073741824        & 1013075968        & 5.65\%          \\
+        500 MB           & 512            & 6.7652           & 1024000          & 973617           & 524288000         & 498491904         & 4.92\%          \\
+        500 MB           & 1024           & 5.9717           & 512000           & 447697           & 524288000         & 458441728         & 12.56\%         \\
+        \bottomrule
+    \end{longtable}
+\end{small}
+\subsection{ QUIC (Stop and Wait)}
+\begin{small}
+    \begin{longtable}{l r r r r r r r}
+        \toprule
+        \textbf{Payload} & \textbf{Block} & \textbf{Time(s)} & \textbf{Pkts(S)} & \textbf{Pkts(R)} & \textbf{Bytes(S)} & \textbf{Bytes(R)} & \textbf{Loss\%} \\
+        \midrule
+        1 GB             & 512            & 151.8875         & 2097152          & 2097152          & 1073741824        & 1073741824        & 0.00\%          \\
+        1 GB             & 1024           & 75.7086          & 1048576          & 1048576          & 1073741824        & 1073741824        & 0.00\%          \\
+        500 MB           & 512            & 74.0261          & 1024000          & 1024000          & 524288000         & 524288000         & 0.00\%          \\
+        500 MB           & 1024           & 37.0389          & 512000           & 512000           & 524288000         & 524288000         & 0.00\%          \\
+        \bottomrule
+    \end{longtable}
+\end{small}
+
+\section{Results Analysis}
+\begin{itemize}
+    \item \textbf{Throughput Efficiency}: For all protocols, increasing the block size resulted in a massive reduction in transfer time due to lower per-packet overhead and fewer system calls.
+    \item \textbf{Reliability vs. Latency}: The "Stop and Wait" implementations achieved 100\% reliability but were significantly slower as they wait for an acknowledgement for every individual packet.
+    \item \textbf{Block Size vs. Data Loss}: In unreliable transports (UDP and QUIC), there is a direct correlation between block size and the probability of data loss. Larger blocks (e.g., 60,000 B) force the underlying layers to use IP fragmentation (in UDP). Because datagrams are atomic, the loss of a single byte or fragment results in the discarding of the entire block. Consequently, while larger blocks improve throughput by reducing header-to-payload ratios, they significantly increase the loss risk, leading to the observed 11--19\% loss rates compared to the sub-1\% loss seen with smaller blocks.
+
+    \item \textbf{Security Overhead}: The mandatory TLS 1.3 encryption in QUIC introduces a measurable performance "tax" compared to raw UDP. Each datagram requires CPU-intensive cryptographic operations for packet protection.
+
+    \item \textbf{Time Efficiency}: Raw UDP was the fastest overall for large blocks (e.g., 0.30s for 1 GB), as it has the lowest per-packet overhead and no congestion control. TCP followed closely (0.54s for 1 GB) due to its highly optimized OS-level stack. Interestingly, at small block sizes (512 B), QUIC (14.64s) was more efficient than both TCP (19.63s) and UDP (20.08s), demonstrating QUIC's superior handling of high-packet-rate streams and its reduced handshake overhead for the first few packets.
+\end{itemize}
+
+\section{Conclusions}
+The experiments demonstrate that there is no "one-size-fits-all" protocol; the choice depends heavily on the specific requirements for reliability, latency, and security.
+
+\subsection{TCP}
+TCP's highly optimized implementation in modern operating systems allows it to achieve high reliable throughput, especially with large block sizes.
+\begin{itemize}
+    \item \textbf{Best Use Case}: Large-scale file transfers and traditional web services (HTTP/1.1 and HTTP/2) where 100\% data integrity is the highest priority.
+\end{itemize}
+
+\subsection{UDP }
+Raw UDP is unparalleled in terms of pure speed and low latency because it bypasses the overhead of handshakes and congestion control. However, it is inherently "unsafe" as it offers no guarantees on delivery or ordering and is best used with smaller block sizes.
+\begin{itemize}
+    \item \textbf{Best Use Case}: Real-time communication  where the occasional lost packet is preferable to the delay caused by retransmissions.
+\end{itemize}
+
+\subsection{QUIC}
+QUIC effectively combines the speed of UDP with the security of TLS 1.3 and the reliability features of TCP (when used in stream mode). In the datagram mode tested here, it demonstrated high efficiency for small packets.
+\begin{itemize}
+    \item \textbf{Best Use Case}: Modern web traffic (HTTP/3),high-security environments requiring encrypted, multi-streamed communication.
+\end{itemize}
+
+
+
+\end{document}

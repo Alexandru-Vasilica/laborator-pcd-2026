@@ -19,7 +19,6 @@ pub async fn handle_quic(file: DataFile, block_size: u32) -> Result<Stats, Box<d
     let mut seq = 0u64;
     let chunk_iter = file.chunk_iter(block_size)?;
     for chunk in chunk_iter {
-        let chunk = chunk?;
         let payload = UdpPayload { seq, data: chunk };
         connection.send_datagram(payload.to_bytes().into())?;
         stats.bytes_sent += payload.data.len();

@@ -12,7 +12,6 @@ pub async fn handle_udp(file: DataFile, block_size: u32) -> Result<Stats, std::i
     };
     let chunk_iter = file.chunk_iter(block_size)?;
     for chunk in chunk_iter {
-        let chunk = chunk?;
         socket.send_to(&chunk, address).await?;
         stats.bytes_sent += chunk.len();
         stats.packets_sent += 1;

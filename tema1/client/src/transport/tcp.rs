@@ -11,8 +11,6 @@ pub async fn handle_tcp(file: DataFile, block_size: u32) -> Result<Stats, std::i
     };
     let chunk_iter = file.chunk_iter(block_size)?;
     for chunk in chunk_iter {
-        let chunk = chunk?;
-
         let len_header = LenHeader { len: chunk.len() };
         let len_header_bytes = len_header.to_bytes();
         stream.write_all(&len_header_bytes).await?;
