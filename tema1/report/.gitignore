@@ -2,3 +2,6 @@
 !.gitignore
 !report.tex
 !report.pdf
+!results.csv
+!time_vs_protocol.png
+!loss_vs_blocksize.png

@@ -3,6 +3,7 @@
 \usepackage[margin=0.5in]{geometry}
 \usepackage{booktabs}
 \usepackage{longtable}
+\usepackage{graphicx}
 
 \title{PCD Homework 1 Report}
 \author{Vasilică Alexandru, MISS1}
@@ -128,6 +129,24 @@ sudo sysctl -w net.inet.udp.maxdgram=65535
         \bottomrule
     \end{longtable}
 \end{small}
+
+\pagebreak
+
+\section{Visualized Results}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{time_vs_protocol.png}
+    \caption{Time taken by protocol and block size (1 GB payload).}
+    \label{fig:time_vs_protocol}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{loss_vs_blocksize.png}
+    \caption{Correlation between block size and data loss for unreliable protocols (UDP and QUIC).}
+    \label{fig:loss_vs_blocksize}
+\end{figure}
 
 \section{Results Analysis}
 \begin{itemize}
