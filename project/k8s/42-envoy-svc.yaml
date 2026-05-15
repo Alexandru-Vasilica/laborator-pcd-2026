@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dlb-envoy
+  namespace: dlb
+  labels:
+    app: dlb-envoy
+spec:
+  selector:
+    app: dlb-envoy
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: admin
+      port: 9901
+      targetPort: admin

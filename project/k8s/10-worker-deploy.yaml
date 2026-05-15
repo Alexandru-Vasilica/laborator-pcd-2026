@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dlb-worker
+  namespace: dlb
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dlb-worker
+  template:
+    metadata:
+      labels:
+        app: dlb-worker
+    spec:
+      containers:
+        - name: httpbin
+          image: mccutchen/go-httpbin:v2.11.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          readinessProbe:
+            httpGet:
+              path: /status/200
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /status/200
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
