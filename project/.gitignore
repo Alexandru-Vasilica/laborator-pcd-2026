@@ -1,0 +1,9 @@
+results/
+__pycache__/
+*.pyc
+analysis/venv/
+analysis/.venv/
+worker/target/
+/tmp/
+*.log
+.venv

@@ -1,17 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dlb-worker
+  name: dlb-worker-slow
   namespace: dlb
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: dlb-worker
+      tier: slow
   template:
     metadata:
       labels:
         app: dlb-worker
+        tier: slow
     spec:
       containers:
         - name: worker
@@ -26,7 +28,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: BASE_DELAY_MS
-              value: "0"
+              value: "300"
             - name: PORT
               value: "8080"
           readinessProbe:
@@ -43,8 +45,8 @@ spec:
             periodSeconds: 10
           resources:
             requests:
-              cpu: 50m
+              cpu: 10m
               memory: 32Mi
             limits:
-              cpu: 250m
+              cpu: 50m
               memory: 128Mi

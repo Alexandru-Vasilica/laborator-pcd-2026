@@ -3,10 +3,16 @@ kind: Service
 metadata:
   name: dlb-worker
   namespace: dlb
+  labels:
+    app: dlb-worker
 spec:
+  clusterIP: None
   selector:
     app: dlb-worker
   ports:
     - name: http
       port: 80
+      targetPort: http
+    - name: metrics
+      port: 9090
       targetPort: http
