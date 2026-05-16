@@ -366,6 +366,83 @@
       ],
       "title": "Envoy Upstream Latency (ms)",
       "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Active connections from Envoy to each upstream endpoint",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line", "fillOpacity": 15, "lineWidth": 2,
+            "pointSize": 4, "showPoints": "never", "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "unit": "short", "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "envoy_cluster_upstream_cx_active{envoy_cluster_name=\"dlb_worker\"}",
+          "legendFormat": "active cx",
+          "refId": "A"
+        },
+        {
+          "expr": "envoy_cluster_upstream_rq_active{envoy_cluster_name=\"dlb_worker\"}",
+          "legendFormat": "active rq",
+          "refId": "B"
+        }
+      ],
+      "title": "Envoy Upstream Active Connections & Requests",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Number of ready worker pods",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2,
+            "pointSize": 5, "showPoints": "always", "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",   "value": null },
+              { "color": "green", "value": 1    }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_ready{namespace=\"dlb\",condition=\"true\"})",
+          "legendFormat": "ready pods",
+          "refId": "A"
+        }
+      ],
+      "title": "Worker Pod Availability",
+      "type": "timeseries"
     }
   ],
   "refresh": "10s",

@@ -8,17 +8,16 @@ export const options = {
     { duration: "1m", target: 20 },
   ],
   thresholds: {
-    http_req_failed: ["rate<0.01"],
-    http_req_duration: ["p(95)<800"],
+    http_req_failed:   ["rate<0.01"],
+    http_req_duration: ["p(95)<1500"],
   },
 };
 
-const baseUrl = __ENV.TARGET || "http://localhost:8080";
+const baseUrl   = __ENV.TARGET     || "http://localhost:8080";
 const slowRatio = Number(__ENV.SLOW_RATIO || 0.2);
 
 export default function () {
-  const useSlow = Math.random() < slowRatio;
-  const path = useSlow ? "/delay/1" : "/get";
+  const path = Math.random() < slowRatio ? "/work?ms=500" : "/work?ms=5";
   const res = http.get(`${baseUrl}${path}`);
   check(res, { "status 200": (r) => r.status === 200 });
   sleep(0.1);

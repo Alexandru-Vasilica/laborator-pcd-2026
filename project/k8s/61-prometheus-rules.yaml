@@ -1,0 +1,75 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: dlb-recording-rules
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: dlb.throughput
+      interval: 15s
+      rules:
+        - record: job:envoy_rq_total:rate1m
+          expr: >
+            sum(rate(
+              envoy_http_downstream_rq_total{
+                envoy_http_conn_manager_prefix="ingress_http"
+              }[1m]
+            ))
+
+    - name: dlb.latency
+      interval: 15s
+      rules:
+        - record: job:envoy_rq_duration_p50:1m
+          expr: >
+            histogram_quantile(0.50,
+              sum(rate(
+                envoy_http_downstream_rq_time_bucket{
+                  envoy_http_conn_manager_prefix="ingress_http"
+                }[1m]
+              )) by (le)
+            )
+        - record: job:envoy_rq_duration_p95:1m
+          expr: >
+            histogram_quantile(0.95,
+              sum(rate(
+                envoy_http_downstream_rq_time_bucket{
+                  envoy_http_conn_manager_prefix="ingress_http"
+                }[1m]
+              )) by (le)
+            )
+        - record: job:envoy_rq_duration_p99:1m
+          expr: >
+            histogram_quantile(0.99,
+              sum(rate(
+                envoy_http_downstream_rq_time_bucket{
+                  envoy_http_conn_manager_prefix="ingress_http"
+                }[1m]
+              )) by (le)
+            )
+
+    - name: dlb.errors
+      interval: 15s
+      rules:
+        - record: job:envoy_rq_5xx:rate1m
+          expr: >
+            sum(rate(
+              envoy_http_downstream_rq_xx{
+                envoy_http_conn_manager_prefix="ingress_http",
+                envoy_response_code_class="5"
+              }[1m]
+            ))
+
+    - name: dlb.workers
+      interval: 15s
+      rules:
+        - record: job:worker_active_requests:sum
+          expr: sum by (pod) (worker_active_requests)
+        - record: job:worker_rq_total:rate1m
+          expr: sum by (pod) (rate(worker_requests_total[1m]))
+        - record: job:worker_rq_duration_p95:1m
+          expr: >
+            histogram_quantile(0.95,
+              sum(rate(worker_request_duration_seconds_bucket[1m])) by (pod, le)
+            )
