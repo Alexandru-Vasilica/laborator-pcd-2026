@@ -96,6 +96,10 @@ undeploy:
 hpa:
 	kubectl apply -f k8s/60-hpa.yaml --context $(CONTEXT)
 
+hpa-experiment: check-test-tools
+	@echo "==> Running HPA scaling experiment (3 min)"
+	bash experiments/run_hpa_experiment.sh
+
 ## ── Grafana ───────────────────────────────────────────────────────────────────
 
 grafana-password:

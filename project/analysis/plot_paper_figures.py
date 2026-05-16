@@ -341,6 +341,161 @@ def fig_error_rate(data):
     print(f"  saved {out}")
 
 
+# ---- Figure 6: HPA replica count + CPU utilisation over time ----
+def fig_hpa_scaling():
+    timeline_path = os.path.join(RESULTS_DIR, "hpa-scaling-timeline.jsonl")
+    if not os.path.exists(timeline_path):
+        print(f"  SKIP fig_hpa_scaling (no {timeline_path})")
+        return None
+
+    elapsed, replicas, cpu_pct = [], [], []
+    with open(timeline_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+                elapsed.append(float(obj["elapsed_s"]))
+                replicas.append(int(obj.get("replicas", 2)))
+                cpu_pct.append(float(obj.get("cpu_pct", 0)))
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    if not elapsed:
+        print("  SKIP fig_hpa_scaling (empty timeline)")
+        return None
+
+    elapsed = np.array(elapsed)
+    replicas = np.array(replicas)
+    cpu_pct = np.array(cpu_pct)
+
+    fig, ax1 = plt.subplots(figsize=(DOUBLE_COL_IN, FIG_HEIGHT))
+    ax2 = ax1.twinx()
+
+    ax1.step(elapsed, replicas, where="post", color="black", linewidth=1.2,
+             label="Replicas", zorder=3)
+    ax1.set_xlabel("Elapsed Time (s)")
+    ax1.set_ylabel("Replica Count")
+    ax1.set_ylim(0, 8)
+    ax1.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+
+    ax2.plot(elapsed, cpu_pct, color="#555555", linewidth=0.8, linestyle="--",
+             label="CPU Util. (%)")
+    ax2.axhline(70, color="#999999", linewidth=0.6, linestyle=":", label="Target (70%)")
+    ax2.set_ylabel("Avg CPU Utilisation (%)")
+    ax2.set_ylim(0, max(100, cpu_pct.max() * 1.15))
+
+    # Mark scale-up events
+    prev_r = replicas[0]
+    for t, r in zip(elapsed[1:], replicas[1:]):
+        if r > prev_r:
+            ax1.axvline(t, color="black", linewidth=0.6, linestyle=":", alpha=0.7)
+        prev_r = r
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper right",
+               framealpha=0.9, fontsize=FONT_SIZE - 1)
+
+    ax1.spines["top"].set_visible(False)
+    ax2.spines["top"].set_visible(False)
+    ax1.yaxis.grid(True, linestyle="--", linewidth=0.4, alpha=0.5)
+    ax1.set_axisbelow(True)
+    fig.tight_layout()
+    out = os.path.join(FIGURES_DIR, "fig_hpa_scaling.pdf")
+    fig.savefig(out)
+    fig.savefig(out.replace(".pdf", ".png"))
+    plt.close(fig)
+    print(f"  saved {out}")
+
+    # Return scale-up times for the latency figure
+    scale_up_times = [t for t, prev, curr in zip(elapsed[1:], replicas[:-1], replicas[1:])
+                      if curr > prev]
+    return scale_up_times, elapsed[0]
+
+
+# ---- Figure 7: HPA latency timeseries (p50 / p95 in 10 s bins) ----
+def fig_hpa_latency_timeseries(scale_up_info=None):
+    k6_path = os.path.join(RESULTS_DIR, "k6-hpa-heavy.json")
+    if not os.path.exists(k6_path):
+        print(f"  SKIP fig_hpa_latency_timeseries (no {k6_path})")
+        return
+
+    from datetime import datetime, timezone
+
+    samples = []   # (elapsed_s, latency_ms)
+    experiment_start = None
+
+    with open(k6_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if obj.get("type") == "Point" and obj.get("metric") == "http_req_duration":
+                raw_time = obj.get("data", {}).get("time", "")
+                val = float(obj.get("data", {}).get("value", 0))
+                try:
+                    # k6 time is ISO 8601 nanosecond precision
+                    ts = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+                    epoch = ts.timestamp()
+                except Exception:
+                    continue
+                if experiment_start is None:
+                    experiment_start = epoch
+                samples.append((epoch - experiment_start, val))
+
+    if not samples:
+        print("  SKIP fig_hpa_latency_timeseries (no samples)")
+        return
+
+    samples.sort()
+    BIN_S = 10
+    max_t = samples[-1][0]
+    bins = np.arange(0, max_t + BIN_S, BIN_S)
+    p50_bins, p95_bins, t_centres = [], [], []
+    for b in bins[:-1]:
+        window = [v for (t, v) in samples if b <= t < b + BIN_S]
+        if window:
+            p50_bins.append(np.percentile(window, 50))
+            p95_bins.append(np.percentile(window, 95))
+            t_centres.append(b + BIN_S / 2)
+
+    if not t_centres:
+        print("  SKIP fig_hpa_latency_timeseries (no binned data)")
+        return
+
+    fig, ax = plt.subplots(figsize=(DOUBLE_COL_IN, FIG_HEIGHT))
+    ax.plot(t_centres, p50_bins, color="black", linewidth=1.0, label="p50")
+    ax.plot(t_centres, p95_bins, color="#555555", linewidth=1.0,
+            linestyle="--", label="p95")
+
+    # Overlay scale-up markers if available
+    if scale_up_info:
+        scale_up_times, _ = scale_up_info
+        for i, t in enumerate(scale_up_times):
+            ax.axvline(t, color="black", linewidth=0.6, linestyle=":",
+                       label="Scale-up" if i == 0 else None)
+
+    ax.set_xlabel("Elapsed Time (s)")
+    ax.set_ylabel("Latency (ms)")
+    ax.legend(loc="upper right", framealpha=0.9)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.yaxis.grid(True, linestyle="--", linewidth=0.4, alpha=0.7)
+    ax.set_axisbelow(True)
+    fig.tight_layout()
+    out = os.path.join(FIGURES_DIR, "fig_hpa_latency_timeseries.pdf")
+    fig.savefig(out)
+    fig.savefig(out.replace(".pdf", ".png"))
+    plt.close(fig)
+    print(f"  saved {out}")
+
+
 if __name__ == "__main__":
     print("Loading k6 metrics...")
     data = load_all_metrics()
@@ -363,5 +518,7 @@ if __name__ == "__main__":
     fig_fault_recovery(fault_data)
     fig_p50_vs_p95(data)
     fig_error_rate(data)
+    scale_up_info = fig_hpa_scaling()
+    fig_hpa_latency_timeseries(scale_up_info)
 
     print("\nDone. Figures saved to paper/figures/")

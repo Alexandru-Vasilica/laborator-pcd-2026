@@ -21,12 +21,13 @@
 Under Heterogeneous Backends in Kubernetes}
 
 \author{
-\IEEEauthorblockN{Cristian-George Andrei}
-\IEEEauthorblockA{\textit{Faculty of Automatic Control and Computer Science}\\
-\textit{University Politehnica of Bucharest}\\
-Bucharest, Romania\\
-crandrei@bitdefender.com}
+\IEEEauthorblockN{Cristian-George Andrei, Alexandru Vasilica}
+\IEEEauthorblockA{\textit{Faculty of Computer Science}\\
+\textit{University Alexandru Ioan Cuza}\\
+Iasi, Romania\\
+cristianandrei987@gmail.com, alexandru.vasilica97@gmail.com}
 }
+
 
 \maketitle
 
@@ -491,6 +492,54 @@ restart containers, not by the load-balancing policy itself.
 Ring Hash achieves 0\,s in one run because new pod IPs happen to match the
 pre-existing hash ring entries.
 
+\subsection{Horizontal Pod Autoscaling}
+
+To validate autoscaling behaviour we apply the HPA manifest
+(\texttt{k8s/60-hpa.yaml}) which targets the \texttt{dlb-worker} deployment
+with a CPU utilisation threshold of 70\%, a minimum of 2 replicas, and a
+maximum of 6.
+The CPU-heavy scenario (100 VUs, all sending \texttt{/cpu?duration=0.1})
+is then run for 3 minutes with Least Request as the load-balancing policy.
+
+Fig.~\ref{fig:hpa_scaling} shows replica count and average CPU utilisation
+over the 180\,s experiment window.
+The dotted vertical lines mark HPA-triggered scale-up events.
+Starting from 2 replicas the CPU utilisation quickly exceeds the 70\% target;
+the HPA controller reacts within its 30\,s stabilisation window and adds
+replicas in batches of up to 2 per 30\,s period (as configured in the
+\texttt{scaleUp.policies} block).
+Once additional replicas become ready and begin serving requests the per-pod
+CPU utilisation drops back toward the target, stabilising the replica count.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_hpa_scaling}
+\caption{Replica count (solid, left axis) and average CPU utilisation
+(dashed, right axis) during the HPA experiment. Dotted vertical lines mark
+scale-up events. The HPA keeps CPU utilisation near the 70\% target
+(dotted horizontal line) by adding replicas as load builds.}
+\label{fig:hpa_scaling}
+\end{figure}
+
+Fig.~\ref{fig:hpa_latency} shows p50 and p95 latency in 10\,s bins over the
+same experiment.
+Before additional replicas become ready, p95 latency is elevated as all
+100 VUs compete for only 2 backends.
+Once scale-up completes, latency drops and stabilises—demonstrating that HPA
+and Least Request interact cooperatively: Least Request reduces latency at
+current scale while HPA increases scale to restore the CPU headroom that
+Least Request relies upon for its load-awareness signal.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_hpa_latency_timeseries}
+\caption{p50 and p95 latency in 10\,s bins during the HPA experiment.
+Dotted vertical lines mark scale-up events. Latency is highest immediately
+after load starts (before new replicas are ready) and decreases after each
+scale-up event.}
+\label{fig:hpa_latency}
+\end{figure}
+
 % ===========================================================================
 \section{Integrated System Requirements and Conformance}
 \label{sec:requirements}
@@ -549,10 +598,11 @@ R11 & The consistent-hash policies \textit{may} exhibit higher error rates
      under CPU-heavy load due to hash affinity. & L &
      Error rate metric &
      Ring Hash 0.18\%, Maglev 0.33\% under heavy load \\
-R12 & The HPA \textit{should} scale the worker deployment to at most 6
-     replicas under CPU pressure. & L &
-     HPA manifest &
-     \texttt{k8s/60-hpa.yaml}: maxReplicas=6 \\
+R12 & The HPA \textit{shall} scale the worker deployment between 2 and 6
+     replicas in response to CPU utilisation exceeding 70\%. & H &
+     HPA experiment &
+     Scale-up observed in Fig.~\ref{fig:hpa_scaling};
+     latency improvement in Fig.~\ref{fig:hpa_latency} \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -659,7 +709,7 @@ that a fixed delay does not capture.
 \textbf{Experiment duration.}
 Scenarios run for 50--180\,s.
 Longer experiments might reveal warm-up effects in consistent-hash policies or
-different behaviour under sustained autoscaling.
+different HPA scale-down behaviour under gradually decreasing load.
 
 \textbf{Prometheus data gap.}
 The Prometheus port-forward was unstable during experiments, so all quantitative
