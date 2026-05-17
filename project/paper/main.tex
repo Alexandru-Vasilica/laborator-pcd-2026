@@ -18,41 +18,41 @@
 \begin{document}
 
 \title{Empirical Evaluation of Load-Balancing Algorithms\\
-Under Heterogeneous Backends in Kubernetes}
+  Under Heterogeneous Backends in Kubernetes}
 
 \author{
-\IEEEauthorblockN{Cristian-George Andrei, Alexandru Vasilica}
-\IEEEauthorblockA{\textit{Faculty of Computer Science}\\
-\textit{University Alexandru Ioan Cuza}\\
-Iasi, Romania\\
-cristianandrei987@gmail.com, alexandru.vasilica97@gmail.com}
+  \IEEEauthorblockN{Cristian-George Andrei, Alexandru Vasilica}
+  \IEEEauthorblockA{\textit{Faculty of Computer Science}\\
+    \textit{University Alexandru Ioan Cuza}\\
+    Iasi, Romania\\
+    cristianandrei987@gmail.com, alexandru.vasilica97@gmail.com}
 }
 
 
 \maketitle
 
 \begin{abstract}
-Tail latency in distributed systems is dominated by stragglers—backend instances
-that respond slower due to hardware variance, garbage collection, or resource
-contention. Load-balancing algorithms differ in how aggressively they avoid
-overloading slow backends.
-This paper presents a controlled empirical evaluation of four Envoy proxy
-load-balancing algorithms—Round Robin, Least Request, Ring Hash, and Maglev—in
-a heterogeneous Kubernetes testbed consisting of three normal-speed worker
-replicas and one intentionally slow replica with a 300\,ms processing penalty
-and reduced CPU allocation.
-Experiments across four workload profiles (steady, burst, heavy, spike) show
-that the Least Request policy reduces p95 latency by 37--72\% compared with Round
-Robin, with zero error rates across all scenarios.
-Consistent-hash policies (Ring Hash, Maglev) provide session affinity at the
-cost of higher latency and non-zero error rates under CPU stress.
-Fault injection demonstrates sub-second recovery for all policies, driven by
-Kubernetes readiness probes rather than load-balancing behaviour.
+  Tail latency in distributed systems is dominated by stragglers—backend instances
+  that respond slower due to hardware variance, garbage collection, or resource
+  contention. Load-balancing algorithms differ in how aggressively they avoid
+  overloading slow backends.
+  This paper presents a controlled empirical evaluation of four Envoy proxy
+  load-balancing algorithms—Round Robin, Least Request, Ring Hash, and Maglev—in
+  a heterogeneous Kubernetes testbed consisting of three normal-speed worker
+  replicas and one intentionally slow replica with a 300\,ms processing penalty
+  and reduced CPU allocation.
+  Experiments across four workload profiles (steady, burst, heavy, spike) show
+  that the Least Request policy reduces p95 latency by 37--72\% compared with Round
+  Robin, with zero error rates across all scenarios.
+  Consistent-hash policies (Ring Hash, Maglev) provide session affinity at the
+  cost of higher latency and non-zero error rates under CPU stress.
+  Fault injection demonstrates sub-second recovery for all policies, driven by
+  Kubernetes readiness probes rather than load-balancing behaviour.
 \end{abstract}
 
 \begin{IEEEkeywords}
-load balancing, Kubernetes, Envoy proxy, least request, consistent hashing,
-tail latency, heterogeneous backends, cloud computing
+  load balancing, Kubernetes, Envoy proxy, least request, consistent hashing,
+  tail latency, heterogeneous backends, cloud computing
 \end{IEEEkeywords}
 
 % ===========================================================================
@@ -82,17 +82,17 @@ remain under-evaluated in realistic heterogeneous conditions.
 
 \textbf{Contributions.} This paper makes the following contributions:
 \begin{itemize}
-\item A reproducible Kubernetes testbed with heterogeneous backends,
-  implemented in Rust with a configurable processing delay and CPU limit,
-  backed by Envoy proxy and a Prometheus/Grafana monitoring stack.
-\item A systematic evaluation of four Envoy load-balancing algorithms under
-  four workload profiles (steady, burst, CPU-heavy, spike).
-\item Quantitative evidence that Least Request reduces p95 latency by
-  37--72\% relative to Round Robin in heterogeneous conditions with zero
-  additional error rate.
-\item A fault-injection experiment showing sub-second recovery is driven by
-  Kubernetes readiness-probe configuration, independent of the load-balancing
-  policy.
+  \item A reproducible Kubernetes testbed with heterogeneous backends,
+        implemented in Rust with a configurable processing delay and CPU limit,
+        backed by Envoy proxy and a Prometheus/Grafana monitoring stack.
+  \item A systematic evaluation of four Envoy load-balancing algorithms under
+        four workload profiles (steady, burst, CPU-heavy, spike).
+  \item Quantitative evidence that Least Request reduces p95 latency by
+        37--72\% relative to Round Robin in heterogeneous conditions with zero
+        additional error rate.
+  \item A fault-injection experiment showing sub-second recovery is driven by
+        Kubernetes readiness-probe configuration, independent of the load-balancing
+        policy.
 \end{itemize}
 
 The remainder of the paper is organised as follows.
@@ -169,7 +169,7 @@ The objective is to minimise the 95th-percentile end-to-end response
 latency $T_{p95}$ over an observation window $W$:
 
 \begin{equation}
-\min_{f} \; T_{p95}(W) = \min_{f} \; \inf\!\left\{t : \Pr[T \le t] \ge 0.95\right\}
+  \min_{f} \; T_{p95}(W) = \min_{f} \; \inf\!\left\{t : \Pr[T \le t] \ge 0.95\right\}
 \end{equation}
 
 subject to:
@@ -200,42 +200,42 @@ ServiceMonitor scrapes them every 15~s into Prometheus, which feeds
 Grafana dashboards.
 
 \begin{figure}[t]
-\centering
-\begin{tikzpicture}[
-  font=\small,
-  box/.style={draw, rectangle, rounded corners=2pt, minimum width=1.4cm,
-              minimum height=0.55cm, align=center, fill=white},
-  slowbox/.style={draw, rectangle, rounded corners=2pt, minimum width=1.4cm,
-              minimum height=0.55cm, align=center, fill=gray!20},
-  arr/.style={->, >=Stealth, thick},
-  darr/.style={->, >=Stealth, dashed, thin},
-]
+  \centering
+  \begin{tikzpicture}[
+      font=\small,
+      box/.style={draw, rectangle, rounded corners=2pt, minimum width=1.4cm,
+          minimum height=0.55cm, align=center, fill=white},
+      slowbox/.style={draw, rectangle, rounded corners=2pt, minimum width=1.4cm,
+          minimum height=0.55cm, align=center, fill=gray!20},
+      arr/.style={->, >=Stealth, thick},
+      darr/.style={->, >=Stealth, dashed, thin},
+    ]
 
-\node[box] (k6) {k6};
-\node[box, right=1.2cm of k6] (envoy) {Envoy\\{\tiny LB Policy}};
-\node[box, above right=0.3cm and 1.2cm of envoy] (w1) {worker-1\\{\tiny CPU: 250m}};
-\node[box, right=1.2cm of envoy] (w2) {worker-2\\{\tiny CPU: 250m}};
-\node[box, below right=0.3cm and 1.2cm of envoy] (w3) {worker-3\\{\tiny CPU: 250m}};
-\node[slowbox, below=0.9cm of w3] (ws) {worker-slow\\{\tiny +300\,ms, 50m}};
-\node[box, below=1.5cm of envoy] (prom) {Prometheus};
-\node[box, left=1.0cm of prom] (grafana) {Grafana};
+    \node[box] (k6) {k6};
+    \node[box, right=1.2cm of k6] (envoy) {Envoy\\{\tiny LB Policy}};
+    \node[box, above right=0.3cm and 1.2cm of envoy] (w1) {worker-1\\{\tiny CPU: 250m}};
+    \node[box, right=1.2cm of envoy] (w2) {worker-2\\{\tiny CPU: 250m}};
+    \node[box, below right=0.3cm and 1.2cm of envoy] (w3) {worker-3\\{\tiny CPU: 250m}};
+    \node[slowbox, below=0.9cm of w3] (ws) {worker-slow\\{\tiny +300\,ms, 50m}};
+    \node[box, below=1.5cm of envoy] (prom) {Prometheus};
+    \node[box, left=1.0cm of prom] (grafana) {Grafana};
 
-\draw[arr] (k6) -- (envoy);
-\draw[arr] (envoy) -- (w1);
-\draw[arr] (envoy) -- (w2);
-\draw[arr] (envoy) -- (w3);
-\draw[arr] (envoy) -- (ws);
+    \draw[arr] (k6) -- (envoy);
+    \draw[arr] (envoy) -- (w1);
+    \draw[arr] (envoy) -- (w2);
+    \draw[arr] (envoy) -- (w3);
+    \draw[arr] (envoy) -- (ws);
 
-\draw[darr] (w1.south) .. controls +(0,-0.4) and +(1,0) .. (prom.east);
-\draw[darr] (w2) -- (prom);
-\draw[darr] (w3.south) .. controls +(0,-0.3) and +(0.7,0) .. (prom.east);
-\draw[darr] (ws) -- (prom);
-\draw[darr] (grafana) -- (prom);
+    \draw[darr] (w1.south) .. controls +(0,-0.4) and +(1,0) .. (prom.east);
+    \draw[darr] (w2) -- (prom);
+    \draw[darr] (w3.south) .. controls +(0,-0.3) and +(0.7,0) .. (prom.east);
+    \draw[darr] (ws) -- (prom);
+    \draw[darr] (grafana) -- (prom);
 
-\end{tikzpicture}
-\caption{Testbed architecture. Solid arrows show request flow; dashed arrows
-show Prometheus metric scraping.}
-\label{fig:architecture}
+  \end{tikzpicture}
+  \caption{Testbed architecture. Solid arrows show request flow; dashed arrows
+    show Prometheus metric scraping.}
+  \label{fig:architecture}
 \end{figure}
 
 \subsection{Headless Service and Per-Pod DNS}
@@ -270,7 +270,7 @@ It exposes five endpoints:
   \item \texttt{GET /get} — immediate JSON response with pod name and timestamp.
   \item \texttt{GET /work?ms=N} — sleeps $\texttt{BASE\_DELAY\_MS} + N$\,ms then responds.
   \item \texttt{GET /cpu?duration=N} — burns CPU for $N$ seconds using
-    \texttt{spawn\_blocking} to avoid blocking the async runtime.
+        \texttt{spawn\_blocking} to avoid blocking the async runtime.
   \item \texttt{GET /health} — liveness and readiness probe target.
   \item \texttt{GET /metrics} — Prometheus exposition format.
 \end{itemize}
@@ -290,11 +290,11 @@ The cluster is managed with k3d running k3s.
 Key manifest decisions:
 \begin{itemize}
   \item \texttt{imagePullPolicy: Never} loads the locally built image into k3d
-    without a registry.
+        without a registry.
   \item The \texttt{POD\_NAME} Downward API field is injected as an environment
-    variable so each worker can label its own metrics.
+        variable so each worker can label its own metrics.
   \item Readiness and liveness probes target \texttt{/health} with a 1\,s period
-    and failure threshold of 3, enabling fast recovery detection.
+        and failure threshold of 3, enabling fast recovery detection.
 \end{itemize}
 
 A HorizontalPodAutoscaler (HPA) is defined for the normal worker deployment
@@ -315,13 +315,13 @@ All share the same upstream cluster pointing to the headless service DNS name
 Four k6 JavaScript scripts drive load generation:
 \begin{itemize}
   \item \textbf{Steady}: 20 VUs, 90\,s; 80\% fast (\texttt{/work?ms=5}),
-    20\% slow (\texttt{/work?ms=500}).
+        20\% slow (\texttt{/work?ms=500}).
   \item \textbf{Burst}: alternates 10\,VU and 80\,VU stages, 90\,s total;
-    70\% fast, 30\% slow.
+        70\% fast, 30\% slow.
   \item \textbf{Heavy}: 100 VUs, 180\,s; all requests to
-    \texttt{/cpu?duration=0.1} (CPU-intensive).
+        \texttt{/cpu?duration=0.1} (CPU-intensive).
   \item \textbf{Spike}: ramps 0→150→0 VUs over 50\,s; 50\% fast, 50\%
-    \texttt{/get}.
+        \texttt{/get}.
 \end{itemize}
 
 % ===========================================================================
@@ -335,9 +335,9 @@ all combinations of 4 policies $\times$ 4 scenarios.
 For each run:
 \begin{enumerate}
   \item The corresponding Envoy ConfigMap is applied and the Envoy deployment
-    is restarted with \texttt{kubectl rollout restart}.
+        is restarted with \texttt{kubectl rollout restart}.
   \item A port-forward from the local host port 18080 to the Envoy ClusterIP
-    service port 80 is established.
+        service port 80 is established.
   \item k6 runs with \texttt{--out json} to capture per-request latency samples.
   \item The port-forward is torn down.
 \end{enumerate}
@@ -354,7 +354,7 @@ Primary metrics are extracted from k6 JSON output:
   \item p50, p95, p99 response latency in milliseconds.
   \item Throughput: total requests divided by scenario duration (req/s).
   \item Error rate: fraction of requests with HTTP status $\ge 500$ or
-    connection failure.
+        connection failure.
 \end{itemize}
 
 Prometheus was configured to scrape both Envoy admin metrics and worker pod
@@ -384,60 +384,60 @@ Fig.~\ref{fig:throughput} (throughput), and Fig.~\ref{fig:scatter}
 (p50 vs.\ p95 spread).
 
 \begin{table*}[t]
-\centering
-\caption{Load-Balancing Algorithm Comparison — All Scenarios}
-\label{tab:results}
-\begin{tabular}{llrrrrl}
-\toprule
-Policy & Scenario & p50 (ms) & p95 (ms) & p99 (ms) & RPS & 5xx/err \\
-\midrule
-Round Robin    & steady & 7.5   & 801.3  & 802.7  & 258.2 & 0\% \\
-Round Robin    & burst  & 8.0   & 802.1  & 803.0  & 132.0 & 0\% \\
-Round Robin    & heavy  & 166.3 & 923.1  & 1356.9 & 301.2 & 0\% \\
-Round Robin    & spike  & 19.5  & 352.2  & 352.9  & 1449  & 0\% \\
-\midrule
-\textbf{Least Request} & steady & 7.6 & \textbf{503.0} & 802.5  & 302.9 & 0\% \\
-\textbf{Least Request} & burst  & 8.4 & \textbf{504.2} & 803.3  & 150.5 & 0\% \\
-\textbf{Least Request} & heavy  & 200.0 & \textbf{499.6} & 723.5 & 363.6 & 0\% \\
-\textbf{Least Request} & spike  & 51.3 & \textbf{97.3} & 353.0  & 1955  & 0\% \\
-\midrule
-Ring Hash & steady & 7.9   & 801.7  & 803.0  & 252.6 & 0\% \\
-Ring Hash & burst  & 8.1   & 801.9  & 802.7  & 128.8 & 0\% \\
-Ring Hash & heavy  & 176.8 & 1112.0 & 1500.3 & 272.4 & 0.18\% \\
-Ring Hash & spike  & 33.2  & 352.3  & 359.3  & 1380  & 0\% \\
-\midrule
-Maglev & steady & 7.4   & 801.2  & 802.6  & 260.1 & 0\% \\
-Maglev & burst  & 7.6   & 801.9  & 802.7  & 132.3 & 0\% \\
-Maglev & heavy  & 177.3 & 1199.6 & 1652.0 & 265.7 & 0.33\% \\
-Maglev & spike  & 51.0  & 352.2  & 352.8  & 1435  & 0\% \\
-\bottomrule
-\end{tabular}
+  \centering
+  \caption{Load-Balancing Algorithm Comparison — All Scenarios}
+  \label{tab:results}
+  \begin{tabular}{llrrrrl}
+    \toprule
+    Policy                 & Scenario & p50 (ms) & p95 (ms)       & p99 (ms) & RPS   & 5xx/err \\
+    \midrule
+    Round Robin            & steady   & 7.5      & 801.3          & 802.7    & 258.2 & 0\%     \\
+    Round Robin            & burst    & 8.0      & 802.1          & 803.0    & 132.0 & 0\%     \\
+    Round Robin            & heavy    & 166.3    & 923.1          & 1356.9   & 301.2 & 0\%     \\
+    Round Robin            & spike    & 19.5     & 352.2          & 352.9    & 1449  & 0\%     \\
+    \midrule
+    \textbf{Least Request} & steady   & 7.6      & \textbf{503.0} & 802.5    & 302.9 & 0\%     \\
+    \textbf{Least Request} & burst    & 8.4      & \textbf{504.2} & 803.3    & 150.5 & 0\%     \\
+    \textbf{Least Request} & heavy    & 200.0    & \textbf{499.6} & 723.5    & 363.6 & 0\%     \\
+    \textbf{Least Request} & spike    & 51.3     & \textbf{97.3}  & 353.0    & 1955  & 0\%     \\
+    \midrule
+    Ring Hash              & steady   & 7.9      & 801.7          & 803.0    & 252.6 & 0\%     \\
+    Ring Hash              & burst    & 8.1      & 801.9          & 802.7    & 128.8 & 0\%     \\
+    Ring Hash              & heavy    & 176.8    & 1112.0         & 1500.3   & 272.4 & 0.18\%  \\
+    Ring Hash              & spike    & 33.2     & 352.3          & 359.3    & 1380  & 0\%     \\
+    \midrule
+    Maglev                 & steady   & 7.4      & 801.2          & 802.6    & 260.1 & 0\%     \\
+    Maglev                 & burst    & 7.6      & 801.9          & 802.7    & 132.3 & 0\%     \\
+    Maglev                 & heavy    & 177.3    & 1199.6         & 1652.0   & 265.7 & 0.33\%  \\
+    Maglev                 & spike    & 51.0     & 352.2          & 352.8    & 1435  & 0\%     \\
+    \bottomrule
+  \end{tabular}
 \end{table*}
 
 \begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/fig_p95_latency}
-\caption{p95 latency (ms) by policy and scenario. Least Request achieves
-the lowest p95 across all scenarios.}
-\label{fig:p95}
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_p95_latency}
+  \caption{p95 latency (ms) by policy and scenario. Least Request achieves
+    the lowest p95 across all scenarios.}
+  \label{fig:p95}
 \end{figure}
 
 \begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/fig_throughput}
-\caption{Throughput (req/s) by policy and scenario. Least Request also
-achieves the highest throughput, consistent with fewer requests queued behind
-the slow backend.}
-\label{fig:throughput}
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_throughput}
+  \caption{Throughput (req/s) by policy and scenario. Least Request also
+    achieves the highest throughput, consistent with fewer requests queued behind
+    the slow backend.}
+  \label{fig:throughput}
 \end{figure}
 
 \begin{figure}[t]
-\centering
-\includegraphics[width=0.75\columnwidth]{figures/fig_p50_vs_p95}
-\caption{p50 vs. p95 latency across all scenarios. Least Request points
-cluster near the diagonal (low spread); Round Robin, Ring Hash, and Maglev
-scatter further, indicating heavier tail inflation.}
-\label{fig:scatter}
+  \centering
+  \includegraphics[width=0.75\columnwidth]{figures/fig_p50_vs_p95}
+  \caption{p50 vs. p95 latency across all scenarios. Least Request points
+    cluster near the diagonal (low spread); Round Robin, Ring Hash, and Maglev
+    scatter further, indicating heavier tail inflation.}
+  \label{fig:scatter}
 \end{figure}
 
 \textbf{Steady load.}
@@ -479,11 +479,11 @@ Fig.~\ref{fig:recovery} shows recovery time after pod deletion.
 All four policies recover within 1\,s.
 
 \begin{figure}[t]
-\centering
-\includegraphics[width=0.75\columnwidth]{figures/fig_fault_recovery}
-\caption{Pod recovery time (seconds) after fault injection (all pods deleted
-at $T = 20$\,s during a 60\,s load test). All policies recover within 1\,s.}
-\label{fig:recovery}
+  \centering
+  \includegraphics[width=0.75\columnwidth]{figures/fig_fault_recovery}
+  \caption{Pod recovery time (seconds) after fault injection (all pods deleted
+    at $T = 20$\,s during a 60\,s load test). All policies recover within 1\,s.}
+  \label{fig:recovery}
 \end{figure}
 
 Recovery time is governed by readiness-probe configuration (period 1\,s,
@@ -512,13 +512,13 @@ Once additional replicas become ready and begin serving requests the per-pod
 CPU utilisation drops back toward the target, stabilising the replica count.
 
 \begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/fig_hpa_scaling}
-\caption{Replica count (solid, left axis) and average CPU utilisation
-(dashed, right axis) during the HPA experiment. Dotted vertical lines mark
-scale-up events. The HPA keeps CPU utilisation near the 70\% target
-(dotted horizontal line) by adding replicas as load builds.}
-\label{fig:hpa_scaling}
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_hpa_scaling}
+  \caption{Replica count (solid, left axis) and average CPU utilisation
+    (dashed, right axis) during the HPA experiment. Dotted vertical lines mark
+    scale-up events. The HPA keeps CPU utilisation near the 70\% target
+    (dotted horizontal line) by adding replicas as load builds.}
+  \label{fig:hpa_scaling}
 \end{figure}
 
 Fig.~\ref{fig:hpa_latency} shows p50 and p95 latency in 10\,s bins over the
@@ -531,13 +531,13 @@ current scale while HPA increases scale to restore the CPU headroom that
 Least Request relies upon for its load-awareness signal.
 
 \begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/fig_hpa_latency_timeseries}
-\caption{p50 and p95 latency in 10\,s bins during the HPA experiment.
-Dotted vertical lines mark scale-up events. Latency is highest immediately
-after load starts (before new replicas are ready) and decreases after each
-scale-up event.}
-\label{fig:hpa_latency}
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_hpa_latency_timeseries}
+  \caption{p50 and p95 latency in 10\,s bins during the HPA experiment.
+    Dotted vertical lines mark scale-up events. Latency is highest immediately
+    after load starts (before new replicas are ready) and decreases after each
+    scale-up event.}
+  \label{fig:hpa_latency}
 \end{figure}
 
 % ===========================================================================
@@ -548,63 +548,63 @@ Table~\ref{tab:requirements} lists the requirements derived from the project
 specification and the conformance evidence from experiments.
 
 \begin{table*}[t]
-\centering
-\caption{System Requirements and Conformance}
-\label{tab:requirements}
-\begin{tabular}{p{0.5cm}p{5.5cm}p{0.7cm}p{2.5cm}p{4.0cm}}
-\toprule
-ID & Requirement & Pri & Verification & Evidence \\
-\midrule
-R1 & The system \textit{shall} support four Envoy LB policies: Round Robin,
-    Least Request, Ring Hash, and Maglev. & H &
-    ConfigMap inspection &
-    4 ConfigMaps in \texttt{k8s/43--46} \\
-R2 & The system \textit{shall} route requests to per-pod IPs using a headless
-    Kubernetes Service. & H &
-    DNS lookup &
-    \texttt{clusterIP: None} in \texttt{k8s/20}; 4 A-records observed \\
-R3 & The worker \textit{shall} expose Prometheus metrics labelled by pod name
-    at \texttt{/metrics}. & H &
-    Metric scrape &
-    \texttt{worker\_requests\_total\{pod=...\}} confirmed \\
-R4 & The testbed \textit{shall} include a slow backend with at least 200\,ms
-    additional latency and reduced CPU. & H &
-    Response inspection &
-    \texttt{BASE\_DELAY\_MS=300}, \texttt{cpu: 50m} in \texttt{k8s/11} \\
-R5 & The system \textit{shall} achieve 0\% error rate under steady and burst
-    loads for all policies. & H &
-    k6 metric &
-    Table~\ref{tab:results}: all 0\% for steady/burst \\
-R6 & The system \textit{shall} recover from total pod deletion within 30\,s. & H &
-    Fault injection &
-    All policies $\le$1\,s (Fig.~\ref{fig:recovery}) \\
-R7 & Least Request \textit{should} achieve at least 20\% lower p95 latency
-    than Round Robin under heterogeneous load. & M &
-    k6 p95 metric &
-    37--72\% improvement across all scenarios \\
-R8 & The system \textit{shall} support at least 100 concurrent virtual users
-    under the heavy scenario. & H &
-    k6 configuration &
-    100 VUs in \texttt{load/k6/heavy.js} \\
-R9 & Experiments \textit{shall} be fully automated and reproducible from a
-    single shell command. & M &
-    Script execution &
-    \texttt{make experiments} runs all 16 combinations \\
-R10 & The system \textit{shall} expose a Grafana dashboard with per-pod
-     request rate and latency panels. & M &
-     Dashboard inspection &
-     \texttt{grafana/worker-dashboard.json}: 5 panels \\
-R11 & The consistent-hash policies \textit{may} exhibit higher error rates
-     under CPU-heavy load due to hash affinity. & L &
-     Error rate metric &
-     Ring Hash 0.18\%, Maglev 0.33\% under heavy load \\
-R12 & The HPA \textit{shall} scale the worker deployment between 2 and 6
-     replicas in response to CPU utilisation exceeding 70\%. & H &
-     HPA experiment &
-     Scale-up observed in Fig.~\ref{fig:hpa_scaling};
-     latency improvement in Fig.~\ref{fig:hpa_latency} \\
-\bottomrule
-\end{tabular}
+  \centering
+  \caption{System Requirements and Conformance}
+  \label{tab:requirements}
+  \begin{tabular}{p{0.5cm}p{5.5cm}p{0.7cm}p{2.5cm}p{4.0cm}}
+    \toprule
+    ID                                                      & Requirement                                                              & Pri & Verification & Evidence \\
+    \midrule
+    R1                                                      & The system \textit{shall} support four Envoy LB policies: Round Robin,
+    Least Request, Ring Hash, and Maglev.                   & H                                                                        &
+    ConfigMap inspection                                    &
+    4 ConfigMaps in \texttt{k8s/43--46}                                                                                                                                \\
+    R2                                                      & The system \textit{shall} route requests to per-pod IPs using a headless
+    Kubernetes Service.                                     & H                                                                        &
+    DNS lookup                                              &
+    \texttt{clusterIP: None} in \texttt{k8s/20}; 4 A-records observed                                                                                                  \\
+    R3                                                      & The worker \textit{shall} expose Prometheus metrics labelled by pod name
+    at \texttt{/metrics}.                                   & H                                                                        &
+    Metric scrape                                           &
+    \texttt{worker\_requests\_total\{pod=...\}} confirmed                                                                                                              \\
+    R4                                                      & The testbed \textit{shall} include a slow backend with at least 200\,ms
+    additional latency and reduced CPU.                     & H                                                                        &
+    Response inspection                                     &
+    \texttt{BASE\_DELAY\_MS=300}, \texttt{cpu: 50m} in \texttt{k8s/11}                                                                                                 \\
+    R5                                                      & The system \textit{shall} achieve 0\% error rate under steady and burst
+    loads for all policies.                                 & H                                                                        &
+    k6 metric                                               &
+    Table~\ref{tab:results}: all 0\% for steady/burst                                                                                                                  \\
+    R6                                                      & The system \textit{shall} recover from total pod deletion within 30\,s.  & H   &
+    Fault injection                                         &
+    All policies $\le$1\,s (Fig.~\ref{fig:recovery})                                                                                                                   \\
+    R7                                                      & Least Request \textit{should} achieve at least 20\% lower p95 latency
+    than Round Robin under heterogeneous load.              & M                                                                        &
+    k6 p95 metric                                           &
+    37--72\% improvement across all scenarios                                                                                                                          \\
+    R8                                                      & The system \textit{shall} support at least 100 concurrent virtual users
+    under the heavy scenario.                               & H                                                                        &
+    k6 configuration                                        &
+    100 VUs in \texttt{load/k6/heavy.js}                                                                                                                               \\
+    R9                                                      & Experiments \textit{shall} be fully automated and reproducible from a
+    single shell command.                                   & M                                                                        &
+    Script execution                                        &
+    \texttt{make experiments} runs all 16 combinations                                                                                                                 \\
+    R10                                                     & The system \textit{shall} expose a Grafana dashboard with per-pod
+    request rate and latency panels.                        & M                                                                        &
+    Dashboard inspection                                    &
+    \texttt{grafana/worker-dashboard.json}: 5 panels                                                                                                                   \\
+    R11                                                     & The consistent-hash policies \textit{may} exhibit higher error rates
+    under CPU-heavy load due to hash affinity.              & L                                                                        &
+    Error rate metric                                       &
+    Ring Hash 0.18\%, Maglev 0.33\% under heavy load                                                                                                                   \\
+    R12                                                     & The HPA \textit{shall} scale the worker deployment between 2 and 6
+    replicas in response to CPU utilisation exceeding 70\%. & H                                                                        &
+    HPA experiment                                          &
+    Scale-up observed in Fig.~\ref{fig:hpa_scaling};
+    latency improvement in Fig.~\ref{fig:hpa_latency}                                                                                                                  \\
+    \bottomrule
+  \end{tabular}
 \end{table*}
 
 % ===========================================================================
@@ -746,10 +746,7 @@ spikes;
 energy consumption measurements.
 
 % ===========================================================================
-\section*{Acknowledgment}
 
-The author thanks the VAS Laboratory instructors at University Politehnica of
-Bucharest for the project specification and guidance.
 
 % ===========================================================================
 \bibliographystyle{IEEEtran}
