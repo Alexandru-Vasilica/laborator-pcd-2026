@@ -126,6 +126,37 @@ random backends and picks the less loaded, reduces the expected maximum load
 from $O(\log n / \log \log n)$ to $O(\log \log n)$, an exponential
 improvement over purely random assignment.
 
+\subsection{Evaluated Load-Balancing Strategies}
+
+The experiments in this paper focus on four Envoy policies that cover two
+distinct routing philosophies: state-free distribution and affinity-based
+routing.
+
+\textbf{Round Robin.}
+Round Robin cycles through backends in a fixed order and gives each endpoint an
+equal share of requests. It is simple, deterministic, and inexpensive, but it
+does not react to backend slowdown, so a single degraded replica can still
+receive the same fraction of traffic as a healthy one.
+
+\textbf{Least Request.}
+Least Request is a dynamic policy derived from power-of-two choices. Envoy
+samples a small number of backends and sends the request to the one with fewer
+in-flight requests. This makes it more sensitive to temporary queue buildup and
+better suited to heterogeneous pools, where a slow replica should be avoided as
+soon as it starts accumulating work.
+
+\textbf{Ring Hash.}
+Ring Hash maps a request key to a point on a hash ring and forwards the request
+to the next available backend on that ring. The policy preserves affinity for a
+given key, which is useful for cache locality or session stickiness, but it can
+bind clients to a slow backend even when healthier replicas are available.
+
+\textbf{Maglev.}
+Maglev provides the same consistent-hashing semantics as Ring Hash, but uses a
+precomputed lookup table to make routing decisions faster and more uniform.
+Its main benefit is stable key-to-backend mapping under membership changes, not
+latency awareness, so it inherits the same affinity-vs.-adaptivity trade-off.
+
 \subsection{Consistent Hashing}
 
 Karger et al. \cite{karger1997consistent} introduced consistent hashing to
