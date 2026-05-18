@@ -32,12 +32,12 @@
 \maketitle
 
 \begin{abstract}
-  Tail latency in distributed systems is dominated by stragglers—backend instances
+  Tail latency in distributed systems is dominated by stragglers - backend instances
   that respond slower due to hardware variance, garbage collection, or resource
   contention. Load-balancing algorithms differ in how aggressively they avoid
   overloading slow backends.
   This paper presents a controlled empirical evaluation of four Envoy proxy
-  load-balancing algorithms—Round Robin, Least Request, Ring Hash, and Maglev—in
+  load-balancing algorithms - Round Robin, Least Request, Ring Hash, and Maglev - in
   a heterogeneous Kubernetes testbed consisting of three normal-speed worker
   replicas and one intentionally slow replica with a 300\,ms processing penalty
   and reduced CPU allocation.
@@ -76,7 +76,7 @@ latency without modifying application code or provisioning extra capacity.
 
 Despite the prevalence of the problem, most production deployments default to
 Round Robin, which is simple but oblivious to backend state.
-Alternative algorithms—Least Request, Ring Hash, and Maglev—are available in
+Alternative algorithms - Least Request, Ring Hash, and Maglev - are available in
 widely deployed proxies such as Envoy \cite{envoyproxy,klein2017envoy} but
 remain under-evaluated in realistic heterogeneous conditions.
 
@@ -115,11 +115,11 @@ Section~\ref{sec:conclusion} concludes.
 \subsection{Load-Balancing Algorithm Taxonomy}
 
 Load-balancing algorithms fall into two broad categories.
-\textit{Stateless} algorithms—Round Robin, random, and their weighted
-variants—select a backend without inspecting queue depth or response time.
+\textit{Stateless} algorithms - Round Robin, random, and their weighted
+variants - select a backend without inspecting queue depth or response time.
 Their low overhead makes them suitable for homogeneous pools.
-\textit{Dynamic} algorithms—Least Connections, Least Request, and
-power-of-two choices (P2C)—query some form of backend state before
+\textit{Dynamic} algorithms - Least Connections, Least Request, and
+power-of-two choices (P2C) - query some form of backend state before
 dispatching.
 Mitzenmacher \cite{mitzenmacher2001power} proves that P2C, which samples two
 random backends and picks the less loaded, reduces the expected maximum load
@@ -267,12 +267,12 @@ tokio 1 async runtime \cite{rustlang}.
 It exposes five endpoints:
 
 \begin{itemize}
-  \item \texttt{GET /get} — immediate JSON response with pod name and timestamp.
-  \item \texttt{GET /work?ms=N} — sleeps $\texttt{BASE\_DELAY\_MS} + N$\,ms then responds.
-  \item \texttt{GET /cpu?duration=N} — burns CPU for $N$ seconds using
+  \item \texttt{GET /get}  -  immediate JSON response with pod name and timestamp.
+  \item \texttt{GET /work?ms=N}  -  sleeps $\texttt{BASE\_DELAY\_MS} + N$\,ms then responds.
+  \item \texttt{GET /cpu?duration=N}  -  burns CPU for $N$ seconds using
         \texttt{spawn\_blocking} to avoid blocking the async runtime.
-  \item \texttt{GET /health} — liveness and readiness probe target.
-  \item \texttt{GET /metrics} — Prometheus exposition format.
+  \item \texttt{GET /health}  -  liveness and readiness probe target.
+  \item \texttt{GET /metrics}  -  Prometheus exposition format.
 \end{itemize}
 
 Three Prometheus metrics are registered at startup via \texttt{OnceLock}:
@@ -385,7 +385,7 @@ Fig.~\ref{fig:throughput} (throughput), and Fig.~\ref{fig:scatter}
 
 \begin{table*}[t]
   \centering
-  \caption{Load-Balancing Algorithm Comparison — All Scenarios}
+  \caption{Load-Balancing Algorithm Comparison  -  All Scenarios}
   \label{tab:results}
   \begin{tabular}{llrrrrl}
     \toprule
@@ -525,7 +525,7 @@ Fig.~\ref{fig:hpa_latency} shows p50 and p95 latency in 10\,s bins over the
 same experiment.
 Before additional replicas become ready, p95 latency is elevated as all
 100 VUs compete for only 2 backends.
-Once scale-up completes, latency drops and stabilises—demonstrating that HPA
+Once scale-up completes, latency drops and stabilises - demonstrating that HPA
 and Least Request interact cooperatively: Least Request reduces latency at
 current scale while HPA increases scale to restore the CPU headroom that
 Least Request relies upon for its load-awareness signal.
@@ -648,8 +648,8 @@ constant regardless of fleet size.
 
 For workloads where backends are homogeneous and requests are short-lived,
 Round Robin is adequate.
-Where heterogeneity exists—whether from hardware variance, garbage collection,
-or explicit slow-path processing—Least Request should be the default choice.
+Where heterogeneity exists - whether from hardware variance, garbage collection,
+or explicit slow-path processing - Least Request should be the default choice.
 Consistent-hash algorithms are appropriate only when session affinity is a
 correctness requirement, not a performance optimisation.
 
@@ -726,8 +726,8 @@ extremely large backend pools where the two-choice sampling probability changes.
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 
-This paper evaluated four Envoy load-balancing policies—Round Robin, Least
-Request, Ring Hash, and Maglev—in a heterogeneous Kubernetes testbed.
+This paper evaluated four Envoy load-balancing policies - Round Robin, Least
+Request, Ring Hash, and Maglev - in a heterogeneous Kubernetes testbed.
 Experiments across four workload profiles consistently show that Least Request
 reduces p95 tail latency by 37--72\% compared with Round Robin at zero
 additional error rate.
@@ -737,7 +737,7 @@ Fault recovery is sub-second for all policies, governed by Kubernetes
 readiness-probe configuration rather than load-balancing behaviour.
 
 \textbf{Future work} includes:
-(1) interaction with the HorizontalPodAutoscaler—whether Least Request delays
+(1) interaction with the HorizontalPodAutoscaler - whether Least Request delays
 scale-out by shielding normal backends from overload signals;
 (2) reinforcement-learning-based dynamic routing that can adapt to transient
 spikes;
